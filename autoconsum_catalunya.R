@@ -3,7 +3,10 @@ library(purrr)
 library(ggplot2)
 library(ggpubr)
 
-autoconsum.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/instalacions_autoconsum.csv") %>%
+basedir <- "/Users/ricard/test/autoconsum_catalunya/dades"
+outdir <- "/Users/ricard/test/autoconsum_catalunya/shiny/dades"
+
+autoconsum.dt <- fread(paste0(basedir,"/instalacions_autoconsum.csv.gz")) %>%
   .[,c(6,7,8,10,12)] %>%
   .[Tecnologia=="FOTOVOLTAICA"] %>% .[,Tecnologia:=NULL] %>%
   setnames(c("date","power","municipality","county")) %>%
@@ -18,39 +21,50 @@ unique(autoconsum.dt$year)
 
 
   
-pib_comarca.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/pib_comarca.csv") %>%
+pib_comarca.dt <- fread(paste0(basedir,"/pib_comarca.csv.gz")) %>%
   .[,c(2,5)] %>% setnames(c("county","pib_capita"))# %>%
   # .[,pib_capita:=as.numeric(pib_capita)]
 
 # only avaialble for relatively citiws with >5000 hab
-pib_municipi.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/pib_municipi.csv") %>%
+pib_municipi.dt <- fread(paste0(basedir,"/pib_municipi.csv.gz")) %>%
   .[,c(2,4)] %>% setnames(c("municipality","pib_capita")) %>%
   .[,municipality:=gsub("\\.",",",municipality)]
 unique(autoconsum.dt$municipality)[!unique(autoconsum.dt$municipality) %in% pib_municipi.dt$municipality]
 
-rfdb_municipi.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/rfdb_municipi.csv") %>%
-  .[,c(1,3)] %>% setnames(c("municipality","rfdb_capita")) %>%
-  .[,rfdb_capita:=as.numeric(gsub("\\,","",rfdb_capita))]
-unique(autoconsum.dt$municipality)[!unique(autoconsum.dt$municipality) %in% rfdb_municipi.dt$municipality]
+# rfdb_municipi.dt <- fread(paste0(basedir,"/rfdb_municipi.csv.gz")) %>%
+#   .[,c(1,3)] %>% setnames(c("municipality","rfdb_capita")) %>%
+#   .[,rfdb_capita:=as.numeric(gsub("\\,","",rfdb_capita))]
+# unique(autoconsum.dt$municipality)[!unique(autoconsum.dt$municipality) %in% rfdb_municipi.dt$municipality]
 
 
 
-pluviometria_comarca.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/pluviometria.txt", header=T) %>%
+pluviometria_comarca.dt <- fread(paste0(basedir,"/pluviometria.txt.gz"), header=T) %>%
   .[,Estaciones:=NULL] %>%
   setnames("V1","county") %>%
   melt(id.vars="county", variable.name="month", value.name="rain") %>%
   .[,.(rain=sum(rain)),by="county"]
 
-poblacio_municipi.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/poblacio_municipi.csv", header=T) %>%
-  .[,c(2,10)] %>% setnames(c("municipality","population_size")) 
+poblacio_municipi.dt <- fread(paste0(basedir,"/poblacio_municipi.csv.gz"), header=T) %>%
+  .[,c(2,10)] %>% setnames(c("municipality","population_size"))  %>%
+  .[population_size>=500]
 # unique(autoconsum.dt$municipality)[!unique(autoconsum.dt$municipality) %in% poblacio_municipi.dt$municipality]
 
-poblacio_comarca.dt <- fread("/Users/ricard/Downloads/dades_catalunya_autoconsum/densitat_poblacio_comarca.txt", header=T) %>%
+poblacio_comarca.dt <- fread(paste0(basedir,"/densitat_poblacio_comarca.csv.gz"), header=T) %>%
   setnames(c("county","population_size","surface_km2","density_km2")) %>%
   .[,log_density_km2:=log2(density_km2)]
 
-# poblacio_comarca.dt$county[!poblacio_comarca.dt$county%in%autoconsum.dt$county]
-# .[,pib_capita:=as.numeric(pib_capita)]
+
+pes_habitatge_unifamiliar.dt <- fread(paste0(basedir,"/pes_habitatge_unifamiliar.csv.gz"), select=c(2,3,5,6)) %>%
+  setnames(c("municipality","un_habitatge","multiples_habitatges","total")) %>%
+  .[total>=500] %>%
+  .[,percentage_habitatges_unifamiliars:=un_habitatge/total] %>%
+  .[,tipus_municipi:=c("ciutat","poble")[as.numeric(percentage_habitatges_unifamiliars>0.50)+1]]
+
+ibi_bonificacio.dt <- fread(paste0(basedir,"/bonificacions_ibi_municipis.csv"), select=c(1,2,3,4)) %>%
+  setnames(c("municipality","provincia","percentage_bonificacio","anys_bonificacio")) %>%
+  .[municipality=="El Masnou",municipality:="Masnou, el"] %>%
+  .[municipality=="El Prat de Llobregat",municipality:="Prat de Llobregat, el"] %>%
+  .[municipality%in%autoconsum.dt$municipality]
 
 ###############################
 ## Overall changes over time ##
@@ -206,21 +220,124 @@ ggbarplot(to.plot[year==2020], x="municipality", y="number_installations_capita"
     axis.text = element_text(size=rel(0.75))
   )
 
+ggscatter(to.plot, x="number_installations_capita", y="rfdb_capita",
+          add="reg.line", add.params = list(color="blue", fill="lightgray"), conf.int=TRUE) +
+  stat_cor(method = "pearson") +
+  # coord_cartesian(ylim=c(100,300)) +
+  facet_wrap(~year, scales="free_x") +
+  labs(x="Number of installations per thousand people (x1000)", y="RFDB capita") +
+  theme(
+    axis.text = element_text(size=rel(0.75))
+  )
 
+###############################
+## Pes habitatge unifamiliar ##
+###############################
+
+to.plot <- autoconsum.dt %>%
+  .[,.(installations=.N),by=c("municipality")] %>% 
+  merge(poblacio_municipi.dt, by=c("municipality")) %>%
+  .[,c("number_installations_capita"):=list(1000*(installations/population_size))] %>%
+  merge(pes_habitatge_unifamiliar.dt, by=c("municipality"))
+
+ggscatter(to.plot, x="percentage_habitatges_unifamiliars", y="number_installations_capita",
+          add="reg.line", add.params = list(color="blue", fill="lightgray"), conf.int=TRUE) +
+  stat_cor(method = "pearson") +
+  labs(x="Pes d'habitatges unifamiliars (en percentatge)", y="Nombre d'instalacions per cada mil habitants") +
+  theme(
+    axis.text = element_text(size=rel(0.75))
+  )
+
+####################################
+## Comparacio amb bonificacio IBI ##
+####################################
+
+to.plot <- autoconsum.dt %>%
+  .[,.(installations=.N),by=c("municipality")] %>% 
+  merge(poblacio_municipi.dt, by=c("municipality")) %>%
+  .[,c("number_installations_capita"):=list(1000*(installations/population_size))] %>%
+  merge(pes_habitatge_unifamiliar.dt[,c("percentage_habitatges_unifamiliars","tipus_municipi","municipality")], by="municipality") %>%
+  merge(ibi_bonificacio.dt[,c("percentage_bonificacio","municipality")], by=c("municipality"),all.x=T) %>%
+  .[,bonificacio:=c("No bonificacio IBI","Si bonificacio IBI")[as.numeric(!is.na(percentage_bonificacio))+1]]
+
+ggboxplot(to.plot, x="bonificacio", y="number_installations_capita", fill="bonificacio") +
+  stat_compare_means(method="wilcox.test") +
+  facet_wrap(~tipus_municipi, scales="free_x") +
+  labs(x="", y="Number of installations per thousand people") +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size=rel(0.75)),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
+
+
+######################################
+## Linear model with all statistics ##
+######################################
+  
+
+to.plot <- autoconsum.dt %>%
+  .[,.(installations=.N),by=c("municipality")] %>% 
+  merge(poblacio_municipi.dt, by=c("municipality")) %>%
+  .[,c("number_installations_capita"):=list(1000*(installations/population_size))] %>%
+  merge(pes_habitatge_unifamiliar.dt[,c("percentage_habitatges_unifamiliars","tipus_municipi","municipality")], by="municipality") %>%
+  merge(ibi_bonificacio.dt[,c("percentage_bonificacio","municipality")], by=c("municipality"),all.x=T) %>%
+  merge(pib_municipi.dt, by="municipality") %>%
+  .[,bonificacio:=c("No bonificacio IBI","Si bonificacio IBI")[as.numeric(!is.na(percentage_bonificacio))+1]]
+
+linear.model <- lm(formula=number_installations_capita~percentage_habitatges_unifamiliars+bonificacio+pib_capita, data=to.plot)
+summary(linear.model)
+to.plot[,residuals:=linear.model[["residuals"]]]
+
+ggbarplot(to.plot[abs(residuals)>3], x="municipality", y="residuals", fill="residuals", sort.val = "asc") +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x="", y="Linear model residual") +
+  guides(x = guide_axis(angle = 90)) +
+  theme(
+    axis.text = element_text(size=rel(0.75))
+  )
+  
 #############
 ## Explore ##
 #############
 
-pib_municipi.dt %>% copy %>%
-  .[,ribes:=municipality=="Sant Pere de Ribes"] %>%
-  setorder(-pib_capita) %>%
-  .[,municipality:=factor(municipality,levels=municipality)]
+# pib_municipi.dt %>% copy %>%
+#   .[,ribes:=municipality=="Sant Pere de Ribes"] %>%
+#   setorder(-pib_capita) %>%
+#   .[,municipality:=factor(municipality,levels=municipality)]
+# 
+# ggbarplot(pib_municipi.dt, x="municipality", y="pib_capita", fill="ribes") +
+#   labs(x="", y="PIB capita") +
+#   scale_fill_manual(values=c("TRUE"="red", "FALSE"="gray50")) +
+#   guides(x = guide_axis(angle = 90)) +
+#   theme(
+#     legend.position = "none",
+#     axis.text = element_text(size=rel(0.5))
+#   )
 
-ggbarplot(pib_municipi.dt, x="municipality", y="pib_capita", fill="ribes") +
-  labs(x="", y="PIB capita") +
-  scale_fill_manual(values=c("TRUE"="red", "FALSE"="gray50")) +
-  guides(x = guide_axis(angle = 90)) +
-  theme(
-    legend.position = "none",
-    axis.text = element_text(size=rel(0.5))
-  )
+
+###########
+## Shiny ##
+###########
+
+municipis <- unique(to.plot$municipality)
+saveRDS(municipis, paste0(outdir,"/municipis.rds"))
+
+anys <- names(which(table(autoconsum.dt$year)>25))
+saveRDS(anys, paste0(outdir,"/anys.rds"))
+
+ibi_bonificacio_to_save.dt <- ibi_bonificacio.dt %>% setnames("municipality","municipi")
+fwrite(ibi_bonificacio_to_save.dt, paste0(outdir,"/ibi_bonificacio.txt.gz"))
+
+autoconsum_to_save.dt <- autoconsum.dt %>% setnames("municipality","municipi")
+fwrite(autoconsum_to_save.dt, paste0(outdir,"/instalacions_autoconsum.txt.gz"))
+
+pes_habitatge_unifamiliar_to_save.dt <- pes_habitatge_unifamiliar.dt
+fwrite(autoconsum_to_save.dt, paste0(outdir,"/pes_habitatge_unifamiliar.txt.gz"))
+
+pib_municipi_to_save.dt <- pib_municipi.dt[municipality!="Catalunya"]
+fwrite(pib_municipi_to_save.dt, paste0(outdir,"/pib_municipi.txt.gz"))
+
+poblacio_municipi_to_save.dt <- poblacio_municipi.dt[municipality!="Catalunya"]
+fwrite(poblacio_municipi_to_save.dt, paste0(outdir,"/poblacio_municipi.txt.gz"))
