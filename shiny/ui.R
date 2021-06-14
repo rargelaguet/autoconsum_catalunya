@@ -1,37 +1,35 @@
 library(shiny)
 library(ggplot2)
-library(DT)
-# library(plotly)
-library(rintrojs)
+# library(DT)
+# library(rintrojs)
 library(ggiraph)
+library(shinythemes)
 
 #####################
 ## Define settings ##
 #####################
 
-setwd("/Users/ricard/test/autoconsum_catalunya/shiny/dades")
-
-# "900px" = "900px"
-# "500px" = "500px"
-# narrower_plot_width = "650px"
-# half_plot_width = "450px"
-# narrower_half_plot_width = "350px"
-# half_plot_height = "260px"
-
+# setwd("/Users/ricard/test/autoconsum_catalunya/shiny/dades")
 
 ###############
 ## Load data ##
 ###############
 
-comarques <- readRDS("comarques.rds")
-municipi <- readRDS("municipis.rds")
-anys <- readRDS("anys.rds")
+comarques <- readRDS("dades/comarques.rds")
+municipi <- readRDS("dades/municipis.rds")
+anys <- readRDS("dades/anys.rds")
+
+## rename stuff
+comarques <- gsub("\'", " ", comarques)
+municipis <- gsub("\'", " ", municipis)
 
 ##############
 ## Shiny UI ##
 ##############
 
-fluidPage(introjsUI(),
+shinyUI(fluidPage(
+  # introjsUI(),
+  theme = shinytheme("cerulean"),
           sidebarLayout(
             sidebarPanel(
               id="sidebar",
@@ -40,12 +38,13 @@ fluidPage(introjsUI(),
               h3("Plot options"),
               
               #SIDEBAR INPUTS
-              selectInput(
-                "comarca",
-                "Comarca",
-                choices = c(comarques,"Totes"),
-                selected="Totes"
-              ),
+              selectInput("comarca", "Comarca", choices = c(comarques,"Totes"), selected="Totes"),
+              
+              # checkboxGroupInput("comarca", "Comarques", choices = comarques, selected = comarques),
+              
+              # selectizeInput("comarca", "Comarques", choices = comarques, selected = comarques, multiple = TRUE),
+              
+              
               sliderInput(
                 "anys", 
                 label = "Anys", 
@@ -104,21 +103,75 @@ fluidPage(introjsUI(),
                   id = "autoconsum_vs_socioeconomia_comarca",
                   sidebarLayout(
                     sidebarPanel(
-                      selectInput("eix_x", "Eix X", choices = c("PIB per capita","Nombre d'instalacions","Densitat de població","Percentage d'habitatges unifamiliars"), selected="PIB"),
-                      selectInput("eix_y", "Eix Y", choices = c("Nombre d'instalacions per 1000 habitants","Nombre total d'instalacions","Potència instal·lada per 1000 habitants","Potència total instal·lada"), selected="Nombre d'instalacions per 1000 habitants"),
-                      selectInput("colour_by", "Color", choices = c("Sense color","PIB per capita", "Potència total instal·lada", "Potència instal·lada per 1000 habitants", "Nombre d'instalacions", "Densitat de població", "Percentage d'habitatges unifamiliars", "Nombre d'instalacions per 1000 habitants"), selected="Sense color"),
+                      selectInput("eix_x_comarques", "Eix X", choices = c("Percentage d'habitatges unifamiliars", "PIB per capita","Nombre total d'instalacions","Densitat de població"), selected="Percentage d'habitatges unifamiliars"),
+                      selectInput("eix_y_comarques", "Eix Y", choices = c("Nombre d'instalacions per 1000 habitants","Nombre total d'instalacions","Potència instal·lada per 1000 habitants","Potència total instal·lada"), selected="Nombre d'instalacions per 1000 habitants"),
+                      selectInput("colour_by_comarques", "Color", choices = c("Sense color","PIB per capita", "Potència total instal·lada", "Potència instal·lada per 1000 habitants", "Nombre d'instalacions", "Densitat de població", "Percentage d'habitatges unifamiliars", "Nombre d'instalacions per 1000 habitants"), selected="Sense color"),
                       checkboxInput("annotar_comarques", "Annotar comarques", value=TRUE),
                       checkboxInput("separar_per_any", "Separar per any", value=FALSE)
                     ),
                   mainPanel(
-                    girafeOutput("test")
+                    girafeOutput("Autoconsum_vs_DadesSocioEconomiques_per_comarca")
                     # plotOutput("test", width = "1200px", height = "500px")
                     )
                   )
+                ), # end tabPanel
+                
+                tabPanel(
+                  title = "Dades socioeconomiques per municipi",
+                  id = "autoconsum_vs_socioeconomia_municipi",
+                  sidebarLayout(
+                    sidebarPanel(
+                      selectInput("eix_x_municipis", "Eix X", choices = c("PIB per capita","Nombre total d'instalacions","Població total","Percentage d'habitatges unifamiliars"), selected="PIB"),
+                      selectInput("eix_y_municipis", "Eix Y", choices = c("Nombre d'instalacions per 1000 habitants","Nombre total d'instalacions","Potència instal·lada per 1000 habitants","Potència total instal·lada"), selected="Nombre d'instalacions per 1000 habitants"),
+                      selectInput("colour_by_municipis", "Color", choices = c("Sense color","PIB per capita", "Potència total instal·lada", "Potència instal·lada per 1000 habitants", "Nombre d'instalacions", "Densitat de població", "Percentage d'habitatges unifamiliars", "Nombre d'instalacions per 1000 habitants"), selected="Sense color"),
+                      checkboxInput("annotar_municipis", "Annotar municipis", value=FALSE),
+                      numericInput("text_size_municipis", label = "Text size", value = 7),
+                      numericInput("dot_size_municipis", label = "Dot size", value = 4)
+                      # checkboxInput("separar_per_any", "Separar per any", value=FALSE)
+                    ),
+                    mainPanel(
+                      girafeOutput("Autoconsum_vs_DadesSocioEconomiques_per_municipi")
+                      # plotOutput("test", width = "1200px", height = "500px")
+                    )
+                  )
+                ), # end tabPanel
+                
+                tabPanel(
+                  title = "Model estadístic comarcal",
+                  id = "model_estadistic_comarcal",
+                  sidebarLayout(
+                    sidebarPanel(
+                      # checkboxInput("separar_per_any", "Separar per any", value=FALSE)
+                    ),
+                    mainPanel(
+                      girafeOutput("ModelEstadisticComarcal")
+                      # plotOutput("ModelEstadisticComarcal", width = "1000px", height = "500px")
+                    )
+                  )
+                ), # end tabPanel
+                
+                tabPanel(
+                  title = "Model estadístic municipal",
+                  id = "model_estadistic_municipal",
+                    girafeOutput("ModelEstadisticMunicipal")
+                ), # end tabPanel
+                
+                tabPanel(
+                  title = "Creixement per municipi",
+                  id = "creixement_per_municipi",
+                  girafeOutput("CreixementPerMunicipi")
+                ), # end tabPanel
+                
+                tabPanel(
+                  title = "Efecte de la bonificació de l'IBI",
+                  id = "bonificacio_ibi",
+                  plotOutput("BonificacioIBI")
                 ) # end tabPanel
+                
                 
               ) # end tabsetPanel
               
             ) # end mainPanel
           ) # end sidebarLayout
         ) # end fluidPage
+) # end shinIU

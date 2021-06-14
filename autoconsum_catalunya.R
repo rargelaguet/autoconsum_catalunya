@@ -343,8 +343,15 @@ fwrite(ibi_bonificacio_to_save.dt, paste0(outdir,"/ibi_bonificacio.txt.gz"))
 autoconsum_to_save.dt <- autoconsum.dt %>% setnames("municipality","municipi")
 fwrite(autoconsum_to_save.dt, paste0(outdir,"/instalacions_autoconsum.txt.gz"))
 
-pes_habitatge_unifamiliar_to_save.dt <- pes_habitatge_unifamiliar.dt
-fwrite(autoconsum_to_save.dt, paste0(outdir,"/pes_habitatge_unifamiliar.txt.gz"))
+pes_habitatge_unifamiliar_to_save.dt <- pes_habitatge_unifamiliar.dt[municipi!="Catalunya"]
+fwrite(pes_habitatge_unifamiliar_to_save.dt, paste0(outdir,"/pes_habitatge_unifamiliar.txt.gz"))
+
+pes_habitatge_unifamiliar_comarca_to_save.dt <- fread(paste0(basedir,"/pes_habitatge_unifamiliar.csv.gz"), select=c(2,3,5,6)) %>%
+  setnames(c("municipi","un_habitatge","multiples_habitatges","total")) %>%
+  merge(municipis_per_comarca.dt[,c("municipi","comarca")],by="municipi") %>%
+  .[,.(un_habitatge=sum(un_habitatge), multiples_habitatges=sum(multiples_habitatges), total=sum(total)),by="comarca"] %>%
+  .[,percentage_habitatges_unifamiliars:=un_habitatge/total]
+fwrite(pes_habitatge_unifamiliar_comarca_to_save.dt, paste0(outdir,"/pes_habitatge_unifamiliar_comarca.txt.gz"))
 
 pib_municipi_to_save.dt <- pib_municipi.dt[municipality!="Catalunya"]
 fwrite(pib_municipi_to_save.dt, paste0(outdir,"/pib_municipi.txt.gz"))
@@ -361,3 +368,5 @@ fwrite(poblacio_comarca_to_save.dt, paste0(outdir,"/poblacio_comarca.txt.gz"))
 
 municips_per_comarca_to_save.dt <- municips_per_comarca.dt[comarca%in%comarques]# %>% setnames(c("county","population_size","population_density"))
 fwrite(municips_per_comarca_to_save.dt, paste0(outdir,"/municipis_per_comarca.txt.gz"))
+
+

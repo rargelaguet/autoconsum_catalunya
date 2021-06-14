@@ -72,7 +72,7 @@ ggplot(to.plot, aes( x= long, y = lat, group = group)) +
 ### Comarques #
 ###############
 
-catalunya_mapa_comarques.shapefile <- readOGR("/Users/ricard/test/rgdal/comarques_catalunya")
+catalunya_mapa_comarques.shapefile <- rgdal::readOGR("/Users/ricard/test/rgdal/comarques_catalunya")
 
 # id to name
 noms_comarques.dt <- data.table(

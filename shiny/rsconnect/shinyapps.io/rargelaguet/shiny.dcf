@@ -1,0 +1,11 @@
+name: shiny
+title:
+username:
+account: rargelaguet
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4270713
+bundleId: 4715806
+url: https://rargelaguet.shinyapps.io/shiny/
+when: 1623694295.36197
+lastSyncTime: 1623694295.36198
