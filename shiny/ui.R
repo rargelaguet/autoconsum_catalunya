@@ -56,37 +56,6 @@ fluidPage(introjsUI(),
               )
               # uiOutput("municipi")
               
-              # selectInput(
-              #   "municipi",
-              #   "Municipi",
-              #   choices = municipis,
-              #   selected="Sant Pere de Ribes"
-              # ),
-              # selectInput(
-              #   "stage",
-              #   "Cell subset",
-              #   choices = c(
-              #     "All timepoints" = "all",
-              #     "E7.5" = "E7.5" ,
-              #     "E7.75" ="E7.75",
-              #     "E8.5" = "E8.5" 
-              #   ),
-              #   selected = "all"
-              # ),
-              # selectInput(
-              #   "colourby",
-              #   "Plot colour",
-              #   choices = c(
-              #     "Cell type" = "celltype",
-              #     "Timepoint" = "stage",
-              #     "Sample" = "sample"
-              #   ),
-              #   selected = "cluster.ann"
-              # ),
-              # selectizeInput("gene", "Gene", choices = NULL, selected = 26600),
-              # selectizeInput("tf", "TF", choices = NULL, selected=10),
-              # checkboxInput("numbers", "Annotate clusters in plot"),
-              # checkboxInput("subset", "Subset cells (faster plots when many points present)"),
             
             ),
             mainPanel(
@@ -108,7 +77,7 @@ fluidPage(introjsUI(),
                 tabPanel(
                   title = "Evolucio de l'autoconsum",
                   id = "autoconsum_evolucio",
-                  girafeOutput("evolucio", width = "800px", height = "1200px"),
+                  girafeOutput("evolucio", width = "800px", height = "1200px")
                   # plotOutput("stage_contribution", width = "900px")
                 ),
                 
@@ -124,12 +93,32 @@ fluidPage(introjsUI(),
                 tabPanel(
                   title = "Autoconsum per comarca",
                   id = "autoconsum_comarca",
-                  girafeOutput("plot_autoconsum_comarca", width = "900px", height = "500px"),
+                  girafeOutput("plot_autoconsum_comarca", width = "1300px", height = "500px")
                   #second binding of data plot needed here
                   # plotOutput("gene_plot", width = "900px", height = "500px"),
                   # plotOutput("gene_violin", width = "900px")
-                )
+                ),
                 
-              )
-            )
-          ))
+                tabPanel(
+                  title = "Dades socioeconomiques per comarca",
+                  id = "autoconsum_vs_socioeconomia_comarca",
+                  sidebarLayout(
+                    sidebarPanel(
+                      selectInput("eix_x", "Eix X", choices = c("PIB per capita","Nombre d'instalacions","Densitat de població","Percentage d'habitatges unifamiliars"), selected="PIB"),
+                      selectInput("eix_y", "Eix Y", choices = c("Nombre d'instalacions per 1000 habitants","Nombre total d'instalacions","Potència instal·lada per 1000 habitants","Potència total instal·lada"), selected="Nombre d'instalacions per 1000 habitants"),
+                      selectInput("colour_by", "Color", choices = c("Sense color","PIB per capita", "Potència total instal·lada", "Potència instal·lada per 1000 habitants", "Nombre d'instalacions", "Densitat de població", "Percentage d'habitatges unifamiliars", "Nombre d'instalacions per 1000 habitants"), selected="Sense color"),
+                      checkboxInput("annotar_comarques", "Annotar comarques", value=TRUE),
+                      checkboxInput("separar_per_any", "Separar per any", value=FALSE)
+                    ),
+                  mainPanel(
+                    girafeOutput("test")
+                    # plotOutput("test", width = "1200px", height = "500px")
+                    )
+                  )
+                ) # end tabPanel
+                
+              ) # end tabsetPanel
+              
+            ) # end mainPanel
+          ) # end sidebarLayout
+        ) # end fluidPage

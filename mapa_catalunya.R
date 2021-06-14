@@ -84,12 +84,14 @@ catalunya_mapa_comarques.dt <- tidy(catalunya_mapa_comarques.shapefile) %>% as.d
   merge(noms_comarques.dt,by="id")
 fwrite(catalunya_mapa_comarques.dt, "/Users/ricard/test/autoconsum_catalunya/shiny/dades/catalunya_mapa_comarques.txt.gz")
 
+centers.dt <- catalunya_mapa_comarques.dt[,.(long=mean(long), lat=mean(lat)), by="comarca"]
+
 # Plot
-ggplot(catalunya_mapa_comarques.dt, aes( x= long, y = lat, group = group)) +
-  geom_polygon(fill = "black", alpha = 0.8, size = 0.05 ) +
+ggplot(catalunya_mapa_comarques.dt, aes( x= long, y = lat)) +
+  geom_polygon(aes(group = group), fill = "black", alpha = 0.8, size = 0.05 ) +
+  geom_text(aes(label = comarca), data=centers.dt, size=3, color = "black") +
   theme_void() +
   theme(
     panel.background = element_rect(size= 0.5, color = "white", fill = "white")
   )
-
 
