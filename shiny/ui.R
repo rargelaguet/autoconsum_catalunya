@@ -3,12 +3,13 @@ library(ggplot2)
 library(DT)
 # library(plotly)
 library(rintrojs)
-# library(ggiraph)
+library(ggiraph)
 
 #####################
 ## Define settings ##
 #####################
 
+setwd("/Users/ricard/test/autoconsum_catalunya/shiny/dades")
 
 # "900px" = "900px"
 # "500px" = "500px"
@@ -18,6 +19,17 @@ library(rintrojs)
 # half_plot_height = "260px"
 
 
+###############
+## Load data ##
+###############
+
+comarques <- readRDS("comarques.rds")
+municipi <- readRDS("municipis.rds")
+anys <- readRDS("anys.rds")
+
+##############
+## Shiny UI ##
+##############
 
 fluidPage(introjsUI(),
           sidebarLayout(
@@ -28,10 +40,27 @@ fluidPage(introjsUI(),
               h3("Plot options"),
               
               #SIDEBAR INPUTS
+              selectInput(
+                "comarca",
+                "Comarca",
+                choices = c(comarques,"Totes"),
+                selected="Totes"
+              ),
+              sliderInput(
+                "anys", 
+                label = "Anys", 
+                min = min(as.numeric(anys)), 
+                max = max(as.numeric(anys)), 
+                value = c(min(as.numeric(anys)), max(as.numeric(anys))),
+                sep=""
+              )
+              # uiOutput("municipi")
+              
               # selectInput(
-              #   "modality",
-              #   "Modality",
-              #   choices = c("ATAC" = "atac", "RNA" = "rna")
+              #   "municipi",
+              #   "Municipi",
+              #   choices = municipis,
+              #   selected="Sant Pere de Ribes"
               # ),
               # selectInput(
               #   "stage",
@@ -79,7 +108,7 @@ fluidPage(introjsUI(),
                 tabPanel(
                   title = "Evolucio de l'autoconsum",
                   id = "autoconsum_evolucio",
-                  plotOutput("evolucio", width = "900px", height = "500px"),
+                  girafeOutput("evolucio", width = "800px", height = "1200px"),
                   # plotOutput("stage_contribution", width = "900px")
                 ),
                 
@@ -95,7 +124,7 @@ fluidPage(introjsUI(),
                 tabPanel(
                   title = "Autoconsum per comarca",
                   id = "autoconsum_comarca",
-                  # plotOutput("data_dummy", width = "900px", height = "500px"),
+                  girafeOutput("plot_autoconsum_comarca", width = "900px", height = "500px"),
                   #second binding of data plot needed here
                   # plotOutput("gene_plot", width = "900px", height = "500px"),
                   # plotOutput("gene_violin", width = "900px")

@@ -23,6 +23,7 @@ unique(autoconsum.dt$year)
   
 pib_comarca.dt <- fread(paste0(basedir,"/pib_comarca.csv.gz")) %>%
   .[,c(2,5)] %>% setnames(c("county","pib_capita"))# %>%
+
   # .[,pib_capita:=as.numeric(pib_capita)]
 
 # only avaialble for relatively citiws with >5000 hab
@@ -316,6 +317,12 @@ ggbarplot(to.plot[abs(residuals)>3], x="municipality", y="residuals", fill="resi
 #     axis.text = element_text(size=rel(0.5))
 #   )
 
+municips_per_comarca.dt <- fread(paste0(basedir,"/municipis_per_comarca_catalunya.csv")) %>%
+  .[,1:4] %>% setnames(c("codi_municipi","municipi","codi_comarca","comarca"))# %>%
+
+# unique(municips_per_comarca.dt$comarca)[!unique(municips_per_comarca.dt$comarca)%in% comarques]
+# grep("Urgell",comarques, value=T)
+# grep("Urgell",unique(municips_per_comarca.dt$comarca), value=T)
 
 ###########
 ## Shiny ##
@@ -323,6 +330,9 @@ ggbarplot(to.plot[abs(residuals)>3], x="municipality", y="residuals", fill="resi
 
 municipis <- unique(to.plot$municipality)
 saveRDS(municipis, paste0(outdir,"/municipis.rds"))
+
+comarques <- unique(to.plot$county)
+saveRDS(comarques, paste0(outdir,"/comarques.rds"))
 
 anys <- names(which(table(autoconsum.dt$year)>25))
 saveRDS(anys, paste0(outdir,"/anys.rds"))
@@ -339,5 +349,15 @@ fwrite(autoconsum_to_save.dt, paste0(outdir,"/pes_habitatge_unifamiliar.txt.gz")
 pib_municipi_to_save.dt <- pib_municipi.dt[municipality!="Catalunya"]
 fwrite(pib_municipi_to_save.dt, paste0(outdir,"/pib_municipi.txt.gz"))
 
+pib_comarca_to_save.dt <- pib_comarca.dt
+fwrite(pib_comarca_to_save.dt, paste0(outdir,"/pib_comarca.txt.gz"))
+
 poblacio_municipi_to_save.dt <- poblacio_municipi.dt[municipality!="Catalunya"]
 fwrite(poblacio_municipi_to_save.dt, paste0(outdir,"/poblacio_municipi.txt.gz"))
+
+# poblacio_comarca_to_save.dt <- poblacio_comarca.dt[,c(1,2,4)] %>% setnames(c("county","population_size","population_density"))
+poblacio_comarca_to_save.dt <- poblacio_comarca.dt %>% setnames(c("county","population_size","population_density"))
+fwrite(poblacio_comarca_to_save.dt, paste0(outdir,"/poblacio_comarca.txt.gz"))
+
+municips_per_comarca_to_save.dt <- municips_per_comarca.dt[comarca%in%comarques]# %>% setnames(c("county","population_size","population_density"))
+fwrite(municips_per_comarca_to_save.dt, paste0(outdir,"/municipis_per_comarca.txt.gz"))
