@@ -1,3 +1,4 @@
+library(R.utils)
 library(shiny)
 library(ggplot2)
 library(data.table)
@@ -19,7 +20,7 @@ library(ggiraph)
 ## Load data ##
 ###############
 
-anys <- read.table("dades/anys.txt.gz")
+anys <- readRDS("dades/anys.rds")
 municipis <- readRDS("dades/municipis.rds")
 comarques <- readRDS("dades/comarques.rds")
 ibi_bonificacio.dt <- fread("dades/ibi_bonificacio.txt.gz")# %>%
@@ -34,12 +35,16 @@ pib_comarca.dt <- fread("dades/pib_comarca.txt.gz")
 poblacio_comarca.dt <- fread("dades/poblacio_comarca.txt.gz")
 municipis_per_comarca.dt <- fread("dades/municipis_per_comarca.txt.gz")
 
-catalunya_mapa_municipis.dt <- fread("dades/catalunya_mapa_municipis.txt.gz")
-catalunya_mapa_comarques.dt <- fread("dades/catalunya_mapa_comarques.txt.gz") %>% setnames("comarca","county")
+catalunya_mapa_municipis.dt <- fread("dades/catalunya_mapa_municipis.txt.gz", colClasses = c("numeric","numeric","factor","factor")) %>%
+  .[,long:=as.integer(long)] %>%
+  .[,lat:=as.integer(lat)]
+catalunya_mapa_comarques.dt <- fread("dades/catalunya_mapa_comarques.txt.gz", colClasses = c("numeric","numeric","factor","factor"))# %>%
+  # .[,long:=as.integer(long)] %>%
+  # .[,lat:=as.integer(lat)]
 
 # Rename stuff
 municipis <- gsub("\'", " ", municipis)
-catalunya_mapa_municipis.dt[, municipi := gsub("\'", " ", municipi)]
+catalunya_mapa_municipis.dt[, municipi := factor(gsub("\'", " ", municipi))]
 poblacio_municipi.dt[, municipi := gsub("\'", " ", municipi)]
 pes_habitatge_unifamiliar_municipi.dt[, municipi := gsub("\'", " ", municipi)]
 pib_municipi.dt[, municipi := gsub("\'", " ", municipi)]
@@ -52,7 +57,7 @@ municipis_per_comarca.dt[, comarca := gsub("\'", " ", comarca)]
 poblacio_comarca.dt[, county := gsub("\'", " ", county)]
 pes_habitatge_unifamiliar_comarca.dt[, county := gsub("\'", " ", county)]
 pib_comarca.dt[, county := gsub("\'", " ", county)]
-catalunya_mapa_comarques.dt[, county := gsub("\'", " ", county)]
+catalunya_mapa_comarques.dt[, county := factor(gsub("\'", " ", county))]
 autoconsum.dt[, county := gsub("\'", " ", county)]
 
 # mapes
@@ -143,7 +148,7 @@ server <- function(input, output, session) {
 
     # p <- cowplot::plot_grid(plotlist=list(p1,p2), rel_heights = c(3/5,2/5), nrow=2)
     
-    p <- girafe(
+    girafe(
       ggobj = plot_grid(p1, p2, nrow=2, rel_heights = c(3/5,2/5)),
       # ggobj = p1,
       width_svg = 16, height_svg = 10,
@@ -154,9 +159,7 @@ server <- function(input, output, session) {
         # opts_hover_inv(css = "opacity:0.75;"),
         # opts_hover(css = "cursor:pointer;r:14px")
       )
-    )
-    
-    return(p)
+    ) %>% return(.)
   })
   
   # output$evolucio = renderPlot({
@@ -201,7 +204,7 @@ server <- function(input, output, session) {
         legend.position = "none"
       )
   
-    to.plot.mapa <- catalunya_mapa_comarques.dt %>% merge(to.plot,by="county")
+    to.plot.mapa <- catalunya_mapa_comarques.dt %>% merge(to.plot[,c("number_installations_capita","county")],by="county")
   
     to.plot.text <- catalunya_mapa_comarques_centre.dt %>% merge(to.plot[,c("number_installations_capita","county")])
     
@@ -432,8 +435,8 @@ server <- function(input, output, session) {
         axis.title = element_text(size=rel(1.5), color="black")
       )
     
-    to.plot.mapa <- catalunya_mapa_comarques.dt %>% merge(to.plot,by="county",all.x=T)
-    to.plot.text <- catalunya_mapa_comarques_centre.dt %>% merge(to.plot[,c("residuals","county")])
+    to.plot.mapa <- catalunya_mapa_comarques.dt %>% merge(to.plot[,c("residuals","county")],by="county",all.x=T)
+    to.plot.text <- catalunya_mapa_comarques_centre.dt %>% merge(to.plot[,c("residuals","county")],by="county")
     
     p2 <- ggplot(to.plot.mapa, aes(x=long, y=lat)) +
       geom_polygon_interactive(aes(group=group, fill=residuals, tooltip=county, data_id=county), alpha = 0.8, size = 0.05) +
@@ -476,6 +479,11 @@ server <- function(input, output, session) {
   
   plotModelEstadisticMunicipal <- reactive({
     
+    if (exists(x="p1")) rm(list = c("p1"))
+    if (exists(x="p2")) rm(list = c("p2"))
+    # if (exists(x="p")) rm(list = c("p"))
+    if (exists(x="to.plot.mapa")) rm(list = c("to.plot.mapa"))
+    
     # Filter data
     autoconsum_filt.dt <- autoconsum.dt[year%in%input$anys[1]:rev(input$anys)[1]]
     
@@ -509,7 +517,8 @@ server <- function(input, output, session) {
         axis.title = element_text(size=rel(1.5), color="black")
       )
     
-    to.plot.mapa <- catalunya_mapa_municipis.dt %>% merge(to.plot,by="municipi",all.x=T)
+    to.plot.mapa <- catalunya_mapa_municipis.dt %>% merge(to.plot[,c("municipi","residuals")], by="municipi",all.x=T) %>%
+      .[,municipi:=factor(municipi)]
     # to.plot.text <- catalunya_mapa_municipis_centre.dt %>% merge(to.plot[,c("residuals","municipi")], by="municipi")
     
     p2 <- ggplot(to.plot.mapa, aes(x=long, y=lat)) +
@@ -522,6 +531,8 @@ server <- function(input, output, session) {
         legend.title = element_blank(),
         panel.background = element_rect(size= 0.5, color = "white", fill = "white")
       )
+    
+    rm(to.plot.mapa)
     
     girafe(
       ggobj = plot_grid(p1, p2, nrow=1, scale=0.9, rel_widths = c(3/5,2/5)),
@@ -549,13 +560,19 @@ server <- function(input, output, session) {
   
   plotCreixementPerMunicipi <- reactive({
     
+    if (exists(x="p1")) rm(list = c("p1"))
+    if (exists(x="p2")) rm(list = c("p2"))
+    # if (exists(x="p")) rm(list = c("p"))
+    if (exists(x="to.plot.mapa")) rm(list = c("to.plot.mapa"))
+    
     # Filter data
     autoconsum_filt.dt <- autoconsum.dt[year%in%input$anys[1]:rev(input$anys)[1]]
     if (input$comarca != "Totes"){
       stopifnot(input$comarca%in%unique(autoconsum.dt$county))
       autoconsum_filt.dt <- autoconsum_filt.dt[county==input$comarca]
     }
-    autoconsum_filt.dt <- autoconsum_filt.dt[,temps:=c("past","present")[as.numeric(as.character(year)>=2020)+1]]
+    autoconsum_filt.dt <- autoconsum_filt.dt %>%
+      .[,temps:=c("past","present")[as.numeric(as.character(year)>=2020)+1]]
     
     to.plot <- autoconsum_filt.dt %>% 
       .[,.(installations=.N),by=c("municipi","temps")] %>%
@@ -579,7 +596,9 @@ server <- function(input, output, session) {
         axis.title = element_text(size=rel(1.5), color="black")
       )
     
-    to.plot.mapa <- catalunya_mapa_municipis.dt %>% merge(to.plot,by="municipi",all.x=T)
+    to.plot.mapa <- catalunya_mapa_municipis.dt %>% merge(to.plot[,c("municipi","diff")], by="municipi",all.x=T) %>%
+      .[,municipi:=factor(municipi)]
+    
     # to.plot.text <- catalunya_mapa_municipis_centre.dt %>% merge(to.plot[,c("diff","municipi")], by="municipi")
     
     p2 <- ggplot(to.plot.mapa, aes(x=long, y=lat)) +
@@ -592,6 +611,8 @@ server <- function(input, output, session) {
         legend.title = element_blank(),
         panel.background = element_rect(size= 0.5, color = "white", fill = "white")
       )
+    
+    rm(to.plot.mapa)
     
     girafe(
       ggobj = plot_grid(p1, p2, nrow=1, scale=0.9, rel_widths = c(3/5,2/5)),
@@ -631,7 +652,7 @@ server <- function(input, output, session) {
       .[,number_installations_capita:=1000*installations/population_size] %>%
       merge(pes_habitatge_unifamiliar_municipi.dt, by="municipi") %>%
       merge(ibi_bonificacio.dt, by="municipi",all.x=T) %>%
-      .[,bonificacio:=c("No bonificacio IBI","Si bonificacio IBI")[as.numeric(!is.na(percentage_bonificacio))+1]]
+      .[,bonificacio:=as.factor(c("No bonificacio IBI","Si bonificacio IBI")[as.numeric(!is.na(percentage_bonificacio))+1])]
   
     # Modificacions manuals
     to.plot[municipi=="Santa Eulàlia de Ronaçana",bonificacio:="Si bonificacio IBI"]
@@ -644,7 +665,7 @@ server <- function(input, output, session) {
     to.plot[municipi=="Argentona",bonificacio:="Si bonificacio IBI"]
     to.plot[municipi=="Sant Fruitós de Bages",bonificacio:="Si bonificacio IBI"]
     
-    p1 <-ggboxplot(to.plot, x="bonificacio", y="number_installations_capita", fill="bonificacio") +
+    p1 <- ggboxplot(to.plot, x="bonificacio", y="number_installations_capita", fill="bonificacio") +
       stat_compare_means(method="wilcox.test") +
       facet_wrap(~tipus_municipi, scales="free_x") +
       labs(x="", y="Number of installations per thousand people") +
@@ -657,11 +678,11 @@ server <- function(input, output, session) {
         axis.ticks.x = element_blank()
       )
     
-    to.plot.mapa <- catalunya_mapa_municipis.dt %>% merge(ibi_bonificacio.dt[,c("municipi","percentage_bonificacio")],by="municipi",all.x=T) %>%
-      .[,bonificacio:=c("No bonificacio IBI","Si bonificacio IBI")[as.numeric(!is.na(percentage_bonificacio))+1]]
+    to.plot.mapa <- catalunya_mapa_municipis.dt %>% merge(ibi_bonificacio.dt[,c("municipi","percentage_bonificacio")], by="municipi",all.x=T) %>%
+      .[,bonificacio:=as.factor(c("No bonificacio IBI","Si bonificacio IBI")[as.numeric(!is.na(percentage_bonificacio))+1])]
     
     p2 <- ggplot(to.plot.mapa, aes(x=long, y=lat)) +
-      geom_polygon_interactive(aes(group=group, fill=bonificacio, tooltip=municipi, data_id=municipi), alpha = 0.8, size = 0.05) +
+      geom_polygon(aes(group=group, fill=bonificacio), alpha = 0.8, size = 0.05) +
       scale_fill_manual(values = c("gray60","blue")) +
       theme_void() +
       theme(

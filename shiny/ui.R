@@ -16,7 +16,7 @@ library(shinythemes)
 ###############
 
 comarques <- readRDS("dades/comarques.rds")
-municipi <- readRDS("dades/municipis.rds")
+municipis <- readRDS("dades/municipis.rds")
 anys <- readRDS("dades/anys.rds")
 
 ## rename stuff
@@ -139,21 +139,13 @@ shinyUI(fluidPage(
                 tabPanel(
                   title = "Model estadístic comarcal",
                   id = "model_estadistic_comarcal",
-                  sidebarLayout(
-                    sidebarPanel(
-                      # checkboxInput("separar_per_any", "Separar per any", value=FALSE)
-                    ),
-                    mainPanel(
-                      girafeOutput("ModelEstadisticComarcal")
-                      # plotOutput("ModelEstadisticComarcal", width = "1000px", height = "500px")
-                    )
-                  )
+                  girafeOutput("ModelEstadisticComarcal")
                 ), # end tabPanel
                 
                 tabPanel(
                   title = "Model estadístic municipal",
                   id = "model_estadistic_municipal",
-                    girafeOutput("ModelEstadisticMunicipal")
+                  girafeOutput("ModelEstadisticMunicipal")
                 ), # end tabPanel
                 
                 tabPanel(

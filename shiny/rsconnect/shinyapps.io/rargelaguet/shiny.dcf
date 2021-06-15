@@ -5,7 +5,9 @@ account: rargelaguet
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4270713
-bundleId: 4715806
+bundleId: 4716223
 url: https://rargelaguet.shinyapps.io/shiny/
-when: 1623694295.36197
-lastSyncTime: 1623694295.36198
+when: 1623701049.62168
+lastSyncTime: 1623701049.6217
+asMultiple: FALSE
+asStatic: FALSE
