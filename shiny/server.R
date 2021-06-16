@@ -130,6 +130,7 @@ server <- function(input, output, session) {
       theme(
         axis.text = element_text(size=rel(1.50)),
         axis.title = element_text(size=rel(1.50), color="black"),
+        legend.text = element_text(size=rel(1.50)),
         legend.title = element_blank(),
         legend.position = "top"
       )
@@ -667,6 +668,7 @@ server <- function(input, output, session) {
     
     p1 <- ggboxplot(to.plot, x="bonificacio", y="number_installations_capita", fill="bonificacio") +
       stat_compare_means(method="wilcox.test") +
+      scale_fill_manual(values = c("gray60","blue")) +
       facet_wrap(~tipus_municipi, scales="free_x") +
       labs(x="", y="Number of installations per thousand people") +
       theme(

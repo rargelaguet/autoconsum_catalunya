@@ -1,6 +1,6 @@
 # Estudi de l'autoconsum energètic de Catalunya
 
-El sector de l’autoconsum fotovoltaic a Catalunya ha crescut de manera molt significativa des de l'any 2019, a conseqüència de l’aprovació d’un marc legal més favorable (en paraules simples, la derogació l'impost al sol).  Aquest repository conté el codi necessaria per crear una aplicació en format [shiny](https://shiny.rstudio.com/) per visualitzar l'evolució de l'autoconsum energètic a Catalunya des de l'any 2013.
+El sector de l’autoconsum fotovoltaic a Catalunya ha crescut de manera molt significativa des de l'any 2019, a conseqüència de l’aprovació d’un marc legal més favorable (en paraules simples, la derogació l'impost al sol).  Aquest repository conté el codi necessaria per crear una aplicació en format [shiny](https://shiny.rstudio.com/) per visualitzar l'evolució de l'autoconsum energètic a Catalunya des de l'any 2017.
 
 
 <p align="center"> 
@@ -35,7 +35,7 @@ Les dades han sigut descarregades (i modificades lleugerament) des dels següent
 
 Agraïments
 -------
-Dono gràcies a la Paula Rodriguez i al David Villar per inspirar-me amb el seu [informe d'autoconsum energètic](http://icaen.gencat.cat/web/.content/10_ICAEN/17_publicacions_informes/08_guies_informes_estudis/informes_i_estudis/arxius/20200831_InformeAutoconsumFV.pdf) i per proporcionar-me dades.
+Dono gràcies a la Paula Rodriguez i al David Villar per proporcionar-me dades i per inspirar-me amb el seu [informe d'autoconsum energètic](http://icaen.gencat.cat/web/.content/10_ICAEN/17_publicacions_informes/08_guies_informes_estudis/informes_i_estudis/arxius/20200831_InformeAutoconsumFV.pdf)
 
 Contact
 -------
